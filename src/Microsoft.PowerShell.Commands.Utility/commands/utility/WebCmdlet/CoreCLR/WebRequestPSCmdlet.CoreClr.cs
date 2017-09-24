@@ -6,14 +6,17 @@ Copyright (c) Microsoft Corporation.  All rights reserved.
 
 using System;
 using System.Management.Automation;
+using System.Management.Automation.Runspaces;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.IO;
 using System.Text;
 using System.Collections;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Xml;
 using System.Collections.Generic;
@@ -173,6 +176,23 @@ namespace Microsoft.PowerShell.Commands
             {
                 handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                 handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            }
+            else if (CertificateValidationScript != null)
+            {
+                // This wraps the supplied CertificateValidationScript and creates a PowerShell runspace in the async callback.
+                // This allows for script users to supply a ScriptBlock and have it properly execute in the async thread.
+                Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> validationCallBackWrapper = 
+                    delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
+                    {
+                        Runspace.DefaultRunspace = RunspaceFactory.CreateRunspace();
+                        Runspace.DefaultRunspace.Open();
+                        Boolean result = CertificateValidationScript.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
+                        Runspace.DefaultRunspace.Close();
+                        Runspace.DefaultRunspace.Dispose();
+                        return result;
+                    };
+
+                handler.ServerCertificateCustomValidationCallback = validationCallBackWrapper;
             }
 
             // This indicates GetResponse will handle redirects.

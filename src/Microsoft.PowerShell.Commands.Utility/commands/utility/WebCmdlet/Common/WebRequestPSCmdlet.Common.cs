@@ -6,6 +6,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Net;
+using System.Net.Http;
+using System.Net.Security;
 using System.IO;
 using System.Text;
 using System.Collections;
@@ -93,6 +95,12 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter]
         public virtual SwitchParameter SkipCertificateCheck { get; set; }
+
+        /// <summary>
+        /// gets or sets the CertificateValidationScript property
+        /// </summary>
+        [Parameter]
+        public virtual Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,Boolean> CertificateValidationScript { get; set; }
 
         #endregion
 
