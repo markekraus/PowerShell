@@ -179,16 +179,15 @@ namespace Microsoft.PowerShell.Commands
             }
             else if (CertificateValidationScript != null)
             {
-                // This wraps the supplied CertificateValidationScript and creates a PowerShell runspace in the async callback.
+                Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> certificateValidationDelegate = LanguagePrimitives.ConvertTo<Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool>>(CertificateValidationScript);
+                // This wraps the supplied CertificateValidationScript and sets the PowerShell runspace in the async callback.
                 // This allows for script users to supply a ScriptBlock and have it properly execute in the async thread.
+                Runspace defaultRunspace = Runspace.DefaultRunspace;
                 Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> validationCallBackWrapper = 
                     delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
                     {
-                        Runspace.DefaultRunspace = RunspaceFactory.CreateRunspace();
-                        Runspace.DefaultRunspace.Open();
-                        Boolean result = CertificateValidationScript.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
-                        Runspace.DefaultRunspace.Close();
-                        Runspace.DefaultRunspace.Dispose();
+                        Runspace.DefaultRunspace = defaultRunspace;
+                        Boolean result = certificateValidationDelegate.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
                         return result;
                     };
 

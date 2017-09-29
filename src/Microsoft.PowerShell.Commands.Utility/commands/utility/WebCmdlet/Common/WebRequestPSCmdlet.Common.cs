@@ -100,7 +100,7 @@ namespace Microsoft.PowerShell.Commands
         /// gets or sets the CertificateValidationScript property
         /// </summary>
         [Parameter]
-        public virtual Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,Boolean> CertificateValidationScript { get; set; }
+        public virtual ScriptBlock CertificateValidationScript { get; set; }
 
         #endregion
 
