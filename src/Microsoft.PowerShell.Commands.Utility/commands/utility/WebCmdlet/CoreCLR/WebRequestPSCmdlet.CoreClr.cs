@@ -190,7 +190,16 @@ namespace Microsoft.PowerShell.Commands
                     delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
                     {
                         Runspace.DefaultRunspace = currentRunspace;
-                        return certificateValidationDelegate.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
+                        Boolean result;
+                        try
+                        {
+                            result = certificateValidationDelegate.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
+                        }
+                        catch
+                        {
+                            result = false;
+                        }
+                        return result;
                     };
 
                 handler.ServerCertificateCustomValidationCallback = validationCallBackWrapper;
