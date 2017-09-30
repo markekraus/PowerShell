@@ -6,8 +6,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Net;
-using System.Net.Http;
-using System.Net.Security;
 using System.IO;
 using System.Text;
 using System.Collections;
