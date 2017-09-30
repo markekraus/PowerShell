@@ -179,8 +179,6 @@ namespace Microsoft.PowerShell.Commands
             }
             else if (CertificateValidationScript != null)
             {
-                Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> certificateValidationDelegate = 
-                    LanguagePrimitives.ConvertTo<Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool>>(CertificateValidationScript);
 
                 // validationCallBackWrapper wraps the converted certificateValidationDelegate so the async callback can set the default
                 // PowerShell Runspace in the async thread to the Runspace of the current thread. This provides the ScriptBlock access to 
@@ -193,7 +191,7 @@ namespace Microsoft.PowerShell.Commands
                         Boolean result;
                         try
                         {
-                            result = certificateValidationDelegate.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
+                            result = Convert.ToBoolean(CertificateValidationScript.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors));
                         }
                         catch
                         {
