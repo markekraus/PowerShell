@@ -180,14 +180,16 @@ namespace Microsoft.PowerShell.Commands
             else if (CertificateValidationScript != null)
             {
 
-                // validationCallBackWrapper wraps the converted certificateValidationDelegate so the async callback can set the default
+                // validationCallBackWrapper wraps the CertificateValidationScript ScriptBlock so the async callback can set the default
                 // PowerShell Runspace in the async thread to the Runspace of the current thread. This provides the ScriptBlock access to 
                 // the current scope.
                 Runspace currentRunspace = Runspace.DefaultRunspace;
+                SessionState currentSessionState = SessionState;
                 Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> validationCallBackWrapper = 
                     delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
                     {
                         Runspace.DefaultRunspace = currentRunspace;
+                        SessionState = currentSessionState;
                         Boolean result;
                         try
                         {

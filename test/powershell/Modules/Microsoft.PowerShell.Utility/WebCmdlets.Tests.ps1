@@ -1320,7 +1320,7 @@ Describe "Invoke-WebRequest tests" -Tags "Feature" {
                 ErrorAction = 'Stop'
                 CertificateValidationScript = { throw 'Bad Cert'}
             }
-            { Invoke-WebRequest @Params } | Should ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand'
+            { Invoke-WebRequest @Params } | ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand'
         }
     }
 
@@ -2170,9 +2170,9 @@ Describe "Invoke-RestMethod tests" -Tags "Feature" {
             $params = @{
                 Uri = Get-WebListenerUrl -Test 'Get' -Https
                 ErrorAction = 'Stop'
-                CertificateValidationScript = { throw 'Bad Cert'}
+                CertificateValidationScript = { throw 'Bad Cert' }
             }
-            { Invoke-WebRequest @Params } | Should ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand'
+            { Invoke-RestMethod @Params } | ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand'
         }
     }
 
