@@ -1266,6 +1266,53 @@ Describe "Invoke-WebRequest tests" -Tags "Feature" {
         }
     }
 
+    Context "Invoke-WebRequest CertificateValidationScript Tests" {
+        It "Verifies Invoke-WebRequest -CertificateValidationScript can accept all certificates" {
+            $result = @{}
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                CertificateValidationScript = { $true }
+            }
+            # WebListener uses a self-signed cert. Without -SkipCertificateCheck this would normally fail
+            { $result['output'] = Invoke-WebRequest @Params } | Should Not Throw
+            $jsonResult = $result.output.Content | ConvertFrom-Json
+            $jsonResult.Headers.Host | Should BeExactly $params.Uri.Authority
+        }
+        It "Verifies Invoke-WebRequest -CertificateValidationScript is ignored when -SkipCertificateCheck is present" {
+            $result = @{}
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                SkipCertificateCheck = $true
+                # This script would fail all certificates
+                CertificateValidationScript = { $false }                
+            }
+            { $result['output'] = Invoke-WebRequest @Params } | Should Not Throw
+            $jsonResult = $result.output.Content | ConvertFrom-Json
+            $jsonResult.Headers.Host | Should BeExactly $params.Uri.Authority
+        }
+        It "Verifies Invoke-WebRequest -CertificateValidationScript script has access to the calling scope" {
+            $result = @{}
+            # WebListener's Certificate Thumbprint
+            $thumbprint = 'C8747A1C4A46E52EEC688A6766967010F86C58E3'
+            $scriptHash = @{Subject = $null}
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                CertificateValidationScript = { 
+                    $scriptHash['Subject'] = $args[1].Subject
+                    # $args[1] is the remote server's X509Certificate2 certificate
+                    return ($args[1].Thumbprint -eq $thumbprint)
+                }
+            }
+            { $result['output'] = Invoke-WebRequest @Params } | Should Not Throw
+            $jsonResult = $result.output.Content | ConvertFrom-Json
+            $jsonResult.Headers.Host | Should BeExactly $params.Uri.Authority
+            $scriptHash.Subject | Should BeExactly 'CN=localhost'
+        }
+    }
+
     BeforeEach {
         if ($env:http_proxy) {
             $savedHttpProxy = $env:http_proxy
@@ -2060,6 +2107,52 @@ Describe "Invoke-RestMethod tests" -Tags "Feature" {
             $headers | Should Not Be 'prexisting'
             $headers.'Content-Type' | Should Be 'text/html; charset=utf-8'
             $headers.Server | Should Be 'Kestrel'
+        }
+    }
+
+    Context "Invoke-RestMethod CertificateValidationScript Tests" {
+        It "Verifies Invoke-RestMethod -CertificateValidationScript can accept all certificates" {
+            $result = @{}
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                CertificateValidationScript = { $true }
+            }
+            # WebListener uses a self-signed cert. Without -SkipCertificateCheck this would normally fail
+            { $result['output'] = Invoke-RestMethod @Params } | Should Not Throw
+            $result.Output.Headers.Host | Should BeExactly $params.Uri.Authority
+        }
+
+        It "Verifies Invoke-RestMethod -CertificateValidationScript is ignored when -SkipCertificateCheck is present" {
+            $result = @{}
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                SkipCertificateCheck = $true
+                # This script would fail all certificates
+                CertificateValidationScript = { $false }                
+            }
+            { $result['output'] = Invoke-RestMethod @Params } | Should Not Throw
+            $result.Output.Headers.Host | Should BeExactly $params.Uri.Authority
+        }
+        
+        It "Verifies Invoke-RestMethod -CertificateValidationScript script has access to the calling scope" {
+            $result = @{}
+            # WebListener's Certificate Thumbprint
+            $thumbprint = 'C8747A1C4A46E52EEC688A6766967010F86C58E3'
+            $scriptHash = @{Subject = $null}
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                CertificateValidationScript = { 
+                    $scriptHash['Subject'] = $args[1].Subject
+                    # $args[1] is the remote server's X509Certificate2 certificate
+                    return ($args[1].Thumbprint -eq $thumbprint)
+                }
+            }
+            { $result['output'] = Invoke-RestMethod @Params } | Should Not Throw
+            $result.Output.Headers.Host | Should BeExactly $params.Uri.Authority
+            $scriptHash.Subject | Should BeExactly 'CN=localhost'
         }
     }
 
