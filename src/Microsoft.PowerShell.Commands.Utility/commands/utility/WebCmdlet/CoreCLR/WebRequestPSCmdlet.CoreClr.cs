@@ -191,7 +191,7 @@ namespace Microsoft.PowerShell.Commands
                         Boolean result;
                         try
                         {
-                            result = Convert.ToBoolean(CertificateValidationScript.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors));
+                            result = Convert.ToBoolean(CertificateValidationScript.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors)[0].BaseObject);
                         }
                         catch
                         {
