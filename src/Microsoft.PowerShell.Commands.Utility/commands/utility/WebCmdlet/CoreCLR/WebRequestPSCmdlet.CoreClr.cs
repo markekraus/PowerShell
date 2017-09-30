@@ -179,16 +179,18 @@ namespace Microsoft.PowerShell.Commands
             }
             else if (CertificateValidationScript != null)
             {
-                Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> certificateValidationDelegate = LanguagePrimitives.ConvertTo<Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool>>(CertificateValidationScript);
-                // This wraps the supplied CertificateValidationScript and sets the PowerShell runspace in the async callback.
-                // This allows for script users to supply a ScriptBlock and have it properly execute in the async thread.
-                Runspace defaultRunspace = Runspace.DefaultRunspace;
+                Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> certificateValidationDelegate = 
+                    LanguagePrimitives.ConvertTo<Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool>>(CertificateValidationScript);
+
+                // validationCallBackWrapper wraps the converted certificateValidationDelegate so the async callback can set the default
+                // PowerShell Runspace in the async thread to the Runspace of the current thread. This provides the ScriptBlock access to 
+                // the current scope.
+                Runspace currentRunspace = Runspace.DefaultRunspace;
                 Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> validationCallBackWrapper = 
                     delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
                     {
-                        Runspace.DefaultRunspace = defaultRunspace;
-                        Boolean result = certificateValidationDelegate.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
-                        return result;
+                        Runspace.DefaultRunspace = currentRunspace;
+                        return certificateValidationDelegate.Invoke(httpRequestMessage, x509Certificate2, x509Chain, sslPolicyErrors);
                     };
 
                 handler.ServerCertificateCustomValidationCallback = validationCallBackWrapper;
