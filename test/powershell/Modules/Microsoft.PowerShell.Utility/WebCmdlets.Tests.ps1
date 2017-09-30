@@ -1318,7 +1318,7 @@ Describe "Invoke-WebRequest tests" -Tags "Feature" {
             $params = @{
                 Uri = Get-WebListenerUrl -Test 'Get' -Https
                 ErrorAction = 'Stop'
-                CertificateValidationScript = { throw 'Bad Cert'}
+                CertificateValidationScript = { throw 'Bad Cert' }
             }
             { Invoke-WebRequest @Params } | ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand'
         }

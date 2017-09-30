@@ -189,7 +189,13 @@ namespace Microsoft.PowerShell.Commands
                     delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
                     {
                         Runspace.DefaultRunspace = currentRunspace;
-                        Runspace.DefaultRunspace.SessionStateProxy.SetVariable("Error", currentDollarError);
+                        var delegateDollarError = GetVariableValue("Error");
+                        if (delegateDollarError == null)
+                        {
+                            PSVariableIntrinsics vi = SessionState.PSVariable;
+                            vi.Set("Error", currentDollarError);
+                        }
+
                         Boolean result;
                         try
                         {
@@ -199,6 +205,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             result = false;
                         }
+
                         return result;
                     };
 
