@@ -1279,6 +1279,7 @@ Describe "Invoke-WebRequest tests" -Tags "Feature" {
             $jsonResult = $result.output.Content | ConvertFrom-Json
             $jsonResult.Headers.Host | Should BeExactly $params.Uri.Authority
         }
+
         It "Verifies Invoke-WebRequest -CertificateValidationScript is ignored when -SkipCertificateCheck is present" {
             $result = @{}
             $params = @{
@@ -1292,6 +1293,7 @@ Describe "Invoke-WebRequest tests" -Tags "Feature" {
             $jsonResult = $result.output.Content | ConvertFrom-Json
             $jsonResult.Headers.Host | Should BeExactly $params.Uri.Authority
         }
+
         It "Verifies Invoke-WebRequest -CertificateValidationScript script has access to the calling scope" {
             $result = @{}
             # WebListener's Certificate Thumbprint
@@ -1310,6 +1312,15 @@ Describe "Invoke-WebRequest tests" -Tags "Feature" {
             $jsonResult = $result.output.Content | ConvertFrom-Json
             $jsonResult.Headers.Host | Should BeExactly $params.Uri.Authority
             $scriptHash.Subject | Should BeExactly 'CN=localhost'
+        }
+
+        It "Verifies Invoke-WebRequest -CertificateValidationScript treats exceptions as Certificate failures" {
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                CertificateValidationScript = { throw 'Bad Cert'}
+            }
+            { Invoke-WebRequest @Params } | Should ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand'
         }
     }
 
@@ -2153,6 +2164,15 @@ Describe "Invoke-RestMethod tests" -Tags "Feature" {
             { $result['output'] = Invoke-RestMethod @Params } | Should Not Throw
             $result.Output.Headers.Host | Should BeExactly $params.Uri.Authority
             $scriptHash.Subject | Should BeExactly 'CN=localhost'
+        }
+
+        It "Verifies Invoke-RestMethod -CertificateValidationScript treats exceptions as Certificate failures" {
+            $params = @{
+                Uri = Get-WebListenerUrl -Test 'Get' -Https
+                ErrorAction = 'Stop'
+                CertificateValidationScript = { throw 'Bad Cert'}
+            }
+            { Invoke-WebRequest @Params } | Should ShouldBeErrorId 'WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand'
         }
     }
 
