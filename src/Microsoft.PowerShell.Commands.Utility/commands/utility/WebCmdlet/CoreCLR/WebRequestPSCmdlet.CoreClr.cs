@@ -184,12 +184,12 @@ namespace Microsoft.PowerShell.Commands
                 // PowerShell Runspace in the async thread to the Runspace of the current thread. This provides the ScriptBlock access to 
                 // the current scope.
                 Runspace currentRunspace = Runspace.DefaultRunspace;
-                SessionState currentSessionState = SessionState;
+                var currentDollarError = GetVariableValue("Error");
                 Func<HttpRequestMessage,X509Certificate2,X509Chain,SslPolicyErrors,bool> validationCallBackWrapper = 
                     delegate(HttpRequestMessage httpRequestMessage, X509Certificate2 x509Certificate2, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors)
                     {
                         Runspace.DefaultRunspace = currentRunspace;
-                        SessionState = currentSessionState;
+                        Runspace.DefaultRunspace.SessionStateProxy.SetVariable("Error", currentDollarError);
                         Boolean result;
                         try
                         {
