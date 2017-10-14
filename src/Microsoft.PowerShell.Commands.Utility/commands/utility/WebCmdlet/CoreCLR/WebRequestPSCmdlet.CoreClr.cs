@@ -322,13 +322,13 @@ namespace Microsoft.PowerShell.Commands
             if (null == request) { throw new ArgumentNullException("request"); }
 
             // set the content type
-            if (ContentType != null)
+            if (ContentType != null && !AsMultipart)
             {
                 WebSession.ContentHeaders[HttpKnownHeaderNames.ContentType] = ContentType;
                 //request
             }
             // ContentType == null
-            else if (Method == WebRequestMethod.Post || (IsCustomMethodSet() && CustomMethod.ToUpperInvariant() == "POST"))
+            else if ((Method == WebRequestMethod.Post || (IsCustomMethodSet() && CustomMethod.ToUpperInvariant() == "POST")) && !AsMultipart)
             {
                 // Win8:545310 Invoke-WebRequest does not properly set MIME type for POST
                 string contentType = null;
@@ -339,18 +339,61 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            // coerce body into a usable form
+            object content = Body;
+            // coerce body into a usable form if it exists
             if (Body != null)
             {
-                object content = Body;
+                content = GetBodyContentObject();
+            }
 
-                // make sure we're using the base object of the body, not the PSObject wrapper
-                PSObject psBody = Body as PSObject;
-                if (psBody != null)
+            if (AsMultipart || content is MultipartFormDataContent)
+            {
+                MultipartFormDataContent multipartFormDataContent = new MultipartFormDataContent();
+                if (content is MultipartFormDataContent multipartFormDataContentBody)
                 {
-                    content = psBody.BaseObject;
+                    multipartFormDataContent = multipartFormDataContentBody;
                 }
 
+                if (null != InFile)
+                {
+                    MediaTypeHeaderValue fileContentType = null;
+                    if (!MediaTypeHeaderValue.TryParse(ContentType, out fileContentType))
+                    {
+                        ErrorRecord error = GetValidationError(WebCmdletStrings.InvalidContentType,
+                                                               "WebCmdletInvalidContentTypeException");
+                        ThrowTerminatingError(error);
+                    }
+
+                    ContentDispositionHeaderValue fileHeader = new ContentDispositionHeaderValue("form-data");
+                    fileHeader.Name = MultipartFileFieldName;
+                    fileHeader.FileName = Path.GetFileName(InFile);
+                    
+                    StreamContent fileContent = new StreamContent(new FileStream(InFile, FileMode.Open));
+                    fileContent.Headers.ContentDisposition = fileHeader;
+                    fileContent.Headers.ContentType = fileContentType;
+
+                    multipartFormDataContent.Add(fileContent);
+                }
+
+                if (content is IDictionary bodyDictionary)
+                {
+                    foreach (string key in bodyDictionary.Keys)
+                    {
+                        ContentDispositionHeaderValue stringHeader = new ContentDispositionHeaderValue("form-data");
+                        stringHeader.Name = key;
+                        
+                        StringContent stringContent = new StringContent(LanguagePrimitives.ConvertTo<string>(bodyDictionary[key]));
+                        stringContent.Headers.ContentDisposition = stringHeader;
+                        
+                        multipartFormDataContent.Add(stringContent);
+                    }
+                }
+
+                WebSession.ContentHeaders.Clear();
+                SetRequestContent(request, multipartFormDataContent);
+            }
+            else if (Body != null)
+            {
                 /* TODO: This needs to be enable after the dependency on mshtml is resolved.
                 var html = content as HtmlWebResponseObject;
                 if (html != null)
@@ -388,11 +431,6 @@ namespace Microsoft.PowerShell.Commands
                 {
                     byte[] bytes = content as byte[];
                     SetRequestContent(request, bytes);
-                }
-                else if (content is MultipartFormDataContent multipartFormDataContent)
-                {
-                    WebSession.ContentHeaders.Clear();
-                    SetRequestContent(request, multipartFormDataContent);
                 }
                 else
                 {

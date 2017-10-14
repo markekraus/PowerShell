@@ -6,6 +6,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Net;
+using System.Net.Http;
 using System.IO;
 using System.Text;
 using System.Collections;
@@ -212,6 +213,12 @@ namespace Microsoft.PowerShell.Commands
         #region Input
 
         /// <summary>
+        /// gets or sets the AsMultipart paramater which treats the Body and/or InFile as multipart form data
+        /// </summary>
+        [Parameter]
+        public virtual SwitchParameter AsMultipart { get; set; }
+        
+        /// <summary>
         /// gets or sets the Body property
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
@@ -229,6 +236,12 @@ namespace Microsoft.PowerShell.Commands
         [Parameter]
         [ValidateSet("chunked", "compress", "deflate", "gzip", "identity", IgnoreCase = true)]
         public virtual string TransferEncoding { get; set; }
+
+        /// <summary>
+        /// gets or sets the MultipartFileFieldName paramater used as the Fieldname for InFile when using AsMultipart
+        /// </summary>
+        [Parameter]
+        public virtual string MultipartFileFieldName { get; set; }
 
         /// <summary>
         /// gets or sets the InFile property
@@ -297,10 +310,37 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // request body content
-            if ((null != Body) && (null != InFile))
+            if ((null != Body) && (null != InFile) && !AsMultipart)
             {
                 ErrorRecord error = GetValidationError(WebCmdletStrings.BodyConflict,
                                                        "WebCmdletBodyConflictException");
+                ThrowTerminatingError(error);
+            }
+
+            // Only IDictionary is supported for Body When using AsMultipart
+            if ((null != Body) && AsMultipart)
+            {
+                object content = GetBodyContentObject();
+                if (!(content is IDictionary) && !(content is MultipartFormDataContent))
+                {
+                    ErrorRecord error = GetValidationError(WebCmdletStrings.UnsupportedMultipartBody,
+                                                       "WebCmdletUnsupportedMultipartBodyException");
+                    ThrowTerminatingError(error);
+                }
+            }
+
+            // InFile requires ContentType when using AsMultipat
+            if ((null != InFile) && (null == ContentType) && (AsMultipart || GetBodyContentObject() is MultipartFormDataContent))
+            {
+                ErrorRecord error = GetValidationError(WebCmdletStrings.MissingInFileContentType,
+                                                       "WebCmdletMissingInFileContentTypeException");
+                ThrowTerminatingError(error);
+            }
+            // InFile requires MultipartFileFieldname
+            if (null != InFile && AsMultipart && String.IsNullOrEmpty(MultipartFileFieldName))
+            {
+                ErrorRecord error = GetValidationError(WebCmdletStrings.MissingInFileFieldName,
+                                                       "WebCmdletMissingInFileFieldNameException");
                 ThrowTerminatingError(error);
             }
 
@@ -491,6 +531,19 @@ namespace Microsoft.PowerShell.Commands
         #endregion Helper Properties
 
         #region Helper Methods
+
+        internal object GetBodyContentObject()
+        {
+            object content = Body;
+            // make sure we're using the base object of the body, not the PSObject wrapper
+            PSObject psBody = Body as PSObject;
+            if (psBody != null)
+            {
+                content = psBody.BaseObject;
+            }
+
+            return content;
+        }
 
         /// <summary>
         /// Verifies that Internet Explorer is available, and that its first-run

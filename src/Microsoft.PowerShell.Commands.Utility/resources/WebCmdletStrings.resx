@@ -138,11 +138,20 @@
   <data name="IEDomNotSupported" xml:space="preserve">
     <value>The response content cannot be parsed because the Internet Explorer engine is not available, or Internet Explorer's first-launch configuration is not complete. Specify the UseBasicParsing parameter and try again. </value>
   </data>
+  <data name="InvalidContentType" xml:space="preserve">
+    <value>The cmdlet cannot run because the following parameter is invalid: ContentType. Specify a valid ContentType the retry</value>
+  </data>
   <data name="JsonStringInBadFormat" xml:space="preserve">
     <value>The converted JSON string is in bad format.</value>
   </data>
   <data name="MaximumRedirectionCountExceeded" xml:space="preserve">
     <value>The maximum redirection count has been exceeded. To increase the number of redirections allowed, supply a higher value to the -MaximumRedirection parameter.</value>
+  </data>
+  <data name="MissingInFileContentType" xml:space="preserve">
+    <value>The cmdlet cannot run because the following parameter is missing: ContentType. InFile requires ContentType when using AsMultipart. Sepcify ContentType and then retry.</value>
+  </data>
+  <data name="MissingInFileFieldName" xml:space="preserve">
+    <value>The cmdlet cannot run because the following parameter is missing: MutliPartFileFieldName. InFile requires MutliPartFileFieldName when using AsMultipart. Sepcify MutliPartFileFieldName and then retry.</value>
   </data>
   <data name="MultiplePathsResolved" xml:space="preserve">
     <value>Path '{0}' can be resolved to multiple paths.</value>
@@ -182,6 +191,9 @@
   </data>
   <data name="ThumbprintNotFound" xml:space="preserve">
     <value>Unable to retrieve certificates because the thumbprint is not valid. Verify the thumbprint and retry. </value>
+  </data>
+  <data name="UnsupportedMultipartBody" xml:space="preserve">
+    <value>The cmdlet cannot run because the following parameter is incorrect: Body. Only IDictionary or MultipartFormDataContent objects are supported for Body when using AsMultipart. Please specfiy an IDictionary or MultipartFormDataContent for Body or remove AsMultipart and then retry.</value>
   </data>
   <data name="WriteRequestComplete" xml:space="preserve">
     <value>Web request completed. (Number of bytes processed: {0})</value>
