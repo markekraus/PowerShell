@@ -1260,11 +1260,11 @@ namespace Microsoft.PowerShell.Commands
                 ||
                 code == HttpStatusCode.RedirectMethod
                 ||
-                code == HttpStatusCode.TemporaryRedirect
-                ||
-                code == HttpStatusCode.RedirectKeepVerb
-                ||
                 code == HttpStatusCode.SeeOther
+                ||
+                code == HttpStatusCode.Ambiguous
+                ||
+                code == HttpStatusCode.MultipleChoices
             );
         }
 
